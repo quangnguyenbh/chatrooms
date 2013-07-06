@@ -1,18 +1,20 @@
 var http = require('http') ;
 var fs = require('fs') ;
 var path = require('path') ;
-var mine = require('mine') ;
+var mime = require('mime') ;
 var cache = {} ;
 
 function send404(response) {
+	console.log("send404");
 	response.writeHead(404, {'Content-Type' : 'text/plain'} );
 	response.write('Error 404: resource not found.') ;
 	response.end() ;
 }
 
 function sendFile(response, filePath, fileContents) {
+	console.log("sendfile " + filePath);
 	response.writeHead(
-		200,{"content-type": mine.lookup(path.basename(filePath)) }
+		200,{"content-type": mime.lookup(path.basename(filePath)) }
 	);
 	response.end(fileContents) ;
 }
@@ -21,8 +23,8 @@ function serveStatic( response, cache, absPath) {
 	if(cache[absPath]) {
 		sendFile(response,absPath, cache[absPath]) ;
 	}else {
-		fs.exist(absPath,function(exists){
-			if(exist) {
+		fs.exists(absPath,function(exists){
+			if(exists) {
 				fs.readFile(absPath,function(err, data){
 					if (err) {
 						send404(response) ;
@@ -37,3 +39,20 @@ function serveStatic( response, cache, absPath) {
 		});	
 	}
 }
+
+
+var server = http.createServer(function(request, response){
+	console.log("request: " + request.url);
+	var filePath = false;
+	if (request.url == '/') {
+		filePath = 'public/index.html'; 
+	} else {
+		filePath = 'public' + request.url; 
+	}
+	var absPath = './' + filePath;
+	serveStatic(response, cache, absPath)
+});
+
+server.listen(3000,function(){
+	console.log("Server listen at port 3000");
+});
